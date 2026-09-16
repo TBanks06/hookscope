@@ -3,7 +3,6 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install
-
 # --- build (NEXT_PUBLIC_* must exist at BUILD time) ------------------------
 FROM node:22-alpine AS build
 WORKDIR /app
