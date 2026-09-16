@@ -1,0 +1,80 @@
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import { api, ApiError, setToken } from "@/lib/api";
+
+function LoginForm() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const [mode, setMode] = useState<"login" | "register">(params.get("mode") === "register" ? "register" : "login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const res = mode === "login" ? await api.login(email, password) : await api.register(email, password);
+      setToken(res.access_token);
+      router.push("/dashboard");   // straight to the product — zero extra clicks
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Something went wrong");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <main className="grid min-h-screen place-items-center px-6">
+      <div className="w-full max-w-sm animate-slide-in">
+        <Link href="/" className="mb-8 flex items-center justify-center gap-2 text-lg font-semibold">
+          <span aria-hidden className="grid size-8 place-items-center rounded-lg bg-emerald-400/15 text-emerald-300">⚡</span>
+          Hookscope
+        </Link>
+
+        {/* mode switcher */}
+        <div role="tablist" aria-label="Authentication mode" className="mb-6 grid grid-cols-2 rounded-xl border border-zinc-800 bg-zinc-900/50 p-1">
+          {(["login", "register"] as const).map((m) => (
+            <button key={m} role="tab" aria-selected={mode === m} type="button" onClick={() => setMode(m)}
+              className={`rounded-lg py-2 text-sm font-medium capitalize transition ${
+                mode === m ? "bg-zinc-800 text-white shadow" : "text-zinc-500 hover:text-zinc-300"
+              }`}>
+              {m === "login" ? "Sign in" : "Create account"}
+            </button>
+          ))}
+        </div>
+
+        <form onSubmit={submit} className="space-y-4">
+          <label className="block">
+            <span className="mb-1.5 block text-sm text-zinc-400">Email</span>
+            <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 outline-none transition focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20" />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm text-zinc-400">Password {mode === "register" && <span className="text-zinc-600">(min 8 chars)</span>}</span>
+            <input type="password" required minLength={8} autoComplete={mode === "login" ? "current-password" : "new-password"}
+              value={password} onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 outline-none transition focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20" />
+          </label>
+
+          {error && <p role="alert" className="text-sm text-rose-300 animate-fade-in">{error}</p>}
+
+          <button type="submit" disabled={busy}
+            className="w-full rounded-xl bg-emerald-400 py-3 font-semibold text-zinc-950 transition hover:bg-emerald-300 active:scale-[.98] disabled:opacity-50">
+            {busy ? "One moment…" : mode === "login" ? "Sign in" : "Create free account"}
+          </button>
+        </form>
+      </div>
+    </main>
+  );
+}
+
+// useSearchParams requires a Suspense boundary during prerender in Next 16
+export default function LoginPage() {
+  return <Suspense><LoginForm /></Suspense>;
+}
