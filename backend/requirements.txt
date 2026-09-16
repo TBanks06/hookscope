@@ -1,0 +1,17 @@
+fastapi>=0.116,<0.117
+uvicorn[standard]>=0.35
+sqlalchemy[asyncio]>=2.0.40
+asyncpg>=0.30
+alembic>=1.16
+pydantic>=2.11
+pydantic-settings>=2.9
+redis>=6.2
+arq>=0.26.3            # async Redis-backed job queue (replay engine)
+httpx>=0.28            # outbound replay HTTP client
+PyJWT>=2.10
+pwdlib[bcrypt]>=0.2.2  # modern password hashing (passlib replacement)
+email-validator>=2.2
+
+# dev / tests
+pytest>=8.4
+pytest-asyncio>=1.0
