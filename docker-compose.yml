@@ -1,0 +1,62 @@
+# Full local stack: db + redis + api + worker + web.
+# Usage: docker compose up --build
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: hookscope
+      POSTGRES_PASSWORD: hookscope
+      POSTGRES_DB: hookscope
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hookscope"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./backend
+    ports: ["8000:8000"]
+    environment: &backend_env
+      DATABASE_URL: postgresql+asyncpg://hookscope:hookscope@db:5432/hookscope
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: dev-secret-change-me-in-prod
+      ENVIRONMENT: development
+      # pydantic parses list env vars as JSON
+      CORS_ORIGINS: '["http://localhost:3000"]'
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  worker:
+    build: ./backend
+    # ARQ worker executes replays + retention cron
+    command: arq app.worker.WorkerSettings
+    environment: *backend_env
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+        NEXT_PUBLIC_INGEST_BASE: http://localhost:8000/api/v1/hooks
+        NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    ports: ["3000:3000"]
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  redisdata:
