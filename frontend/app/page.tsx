@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ArrowRight, Radar, SearchX, PencilRuler, Repeat2, RefreshCcw, Activity, Zap } from "lucide-react";
-
 /* The exact value loop we sell — mirrors the product pipeline 1:1. */
 const PIPELINE = [
   { icon: Zap,          title: "Receive",        copy: "One secret URL per project. Any sender, any schema, zero setup." },
