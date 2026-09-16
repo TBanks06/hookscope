@@ -1,0 +1,14 @@
+git init hookscope && cd hookscope      # drop the files above into this tree
+docker compose up --build
+
+# → Landing page:  http://localhost:3000
+# → Dashboard:     http://localhost:3000/dashboard (register first)
+# → API docs:      http://localhost:8000/api/docs
+
+# Send a test webhook (after creating a project in the dashboard):
+curl -X POST http://localhost:8000/api/v1/hooks/<ingest_key> \
+     -H 'content-type: application/json' \
+     -d '{"event":"invoice.paid","amount":4200}'
+
+# Tests (with the stack running):
+pytest backend/tests -q
